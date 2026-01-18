@@ -10,14 +10,17 @@ hero:
     - theme: brand
       text: 青云对象存储文档
       link: /docs/qingyun_oss/控件文档/青云对象存储控件文档.md
+    - theme: alt
+      text: 青云系列项目集合
+      link: /docs/nav/
 
 features:
-  - title: Feature A
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+  - title: 免费🆓
+    details: 所有服务免费使用哟
+  - title: 快速稳定📍
+    details: 怎么可能跑路
+  - title: 持续更新🆕
+    details: 稳定更新服务更有保障
 ---
 
 

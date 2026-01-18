@@ -3,11 +3,12 @@ import { defineConfig } from 'vitepress'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "青云学研社产品文档",
-  description: "A VitePress Site",
+  description: "一起play！",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: '主页', link: '/' },
+      { text: '产品集合', link: '/docs/nav/' },
     ],
 
     sidebar: {
@@ -23,7 +24,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
+      { icon: 'github', link: 'https://github.com/Explore114/qingyun_doc' }
     ]
   }
 })
