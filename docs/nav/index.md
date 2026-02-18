@@ -13,6 +13,6 @@ import { NAV_DATA } from '/.vitepress/theme/untils/data'
 </script>
 
 
-# 我的导航
+# 青云学研产品导航
 
 <MNavLinks v-for="{title, items} in NAV_DATA" :title="title" :items="items"/>

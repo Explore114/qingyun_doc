@@ -21,6 +21,16 @@ export const NAV_DATA: NavData[] = [
     items: [
       {
         icon: '',
+        title: 'J的个人博客',
+        badge: {
+          text: '博客',
+          type: 'tip',
+        },
+        desc: '我的个人博客，分享经验，简介于琐事',
+        link: 'https://blog.jsoftstudio.top/'
+      },
+      {
+        icon: '',
         title: '虚位以待',
         badge: {
           text: '欢迎加入',
