@@ -18,10 +18,17 @@ jobs:
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR Code
+      - name: Checkout Base Code (Safe Scripts)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base_code
+
+      - name: Checkout PR Code (Unsafe Data)
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          path: pr_code
           
       - name: Add Friend Link Label
         uses: actions/github-script@v7
@@ -37,10 +44,9 @@ jobs:
       - name: Verify Links
         id: verify
         run: |
-          node .github/scripts/verify_links.js > output.txt
+          # Use the script from base_code to check the data file in pr_code
+          node base_code/.github/scripts/verify_links.js pr_code/.vitepress/theme/untils/data.ts > output.txt
           cat output.txt
-          # Read output.txt to env vars for next steps or use script output
-          # The script already writes to GITHUB_OUTPUT, so we can use steps.verify.outputs
         continue-on-error: true
 
       - name: Update PR Title
@@ -49,12 +55,15 @@ jobs:
         with:
           script: |
             const title = "${{ steps.verify.outputs.title }}";
-            github.rest.pulls.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-              title: title
-            })
+            // Check if title is valid to avoid empty update
+            if (title && title.trim()) {
+                github.rest.pulls.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: context.issue.number,
+                  title: title
+                })
+            }
 
       - name: Label Link Status
         uses: actions/github-script@v7
@@ -87,6 +96,10 @@ jobs:
         with:
           script: |
             const body = "请在您的网站根目录放置一个名为 `qingyun-verify.txt` 的文件以验证所有权（内容不限）。\n完成后请在此评论回复“准备完毕”以触发验证。";
+            
+            // Avoid duplicate comments if possible, but for simplicity we comment on every push/update
+            // You might want to check existing comments in a real scenario
+            
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -105,7 +118,13 @@ jobs:
     if: github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '准备完毕')
     runs-on: ubuntu-latest
     steps:
-      - name: Get PR Branch
+      - name: Checkout Base Code (Safe Scripts)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: base_code
+
+      - name: Get PR Branch SHA
         uses: actions/github-script@v7
         id: get-pr
         with:
@@ -118,14 +137,19 @@ jobs:
             return pr.data.head.sha;
           result-encoding: string
 
-      - name: Checkout PR Code
+      - name: Checkout PR Code (Unsafe Data)
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.get-pr.outputs.result }}
+          path: pr_code
 
       - name: Verify Ownership File
         id: verify
-        run: node .github/scripts/verify_links.js
+        run: |
+           # Use safe script to check unsafe data
+           node base_code/.github/scripts/verify_links.js pr_code/.vitepress/theme/untils/data.ts > output.txt
+           # We need verify_status specifically
+           # Re-exporting verify_status is handled by the script writing to GITHUB_OUTPUT
 
       - name: Handle Verification Result
         uses: actions/github-script@v7
@@ -134,19 +158,28 @@ jobs:
             const verifyStatus = "${{ steps.verify.outputs.verify_status }}";
             if (verifyStatus === 'ok') {
               // Merge PR
-              await github.rest.pulls.merge({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: context.issue.number,
-                merge_method: 'squash'
-              });
-              
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: "验证通过，已自动合并。"
-              });
+              try {
+                  await github.rest.pulls.merge({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: context.issue.number,
+                    merge_method: 'squash'
+                  });
+                  
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    body: "验证通过，已自动合并。"
+                  });
+              } catch (error) {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    body: "验证通过，但在合并时遇到错误（可能是冲突或权限不足）：" + error.message
+                  });
+              }
             } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,

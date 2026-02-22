@@ -3,7 +3,7 @@ const https = require('https');
 const http = require('http');
 const path = require('path');
 
-const FILE_PATH = '.vitepress/theme/untils/data.ts';
+const FILE_PATH = process.argv[2] || '.vitepress/theme/untils/data.ts';
 
 function checkUrl(url) {
     return new Promise((resolve) => {
