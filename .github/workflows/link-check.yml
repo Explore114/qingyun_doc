@@ -1,0 +1,157 @@
+name: Link Verification
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.vitepress/theme/untils/data.ts'
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-pr:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          
+      - name: Add Friend Link Label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['友链']
+            })
+
+      - name: Verify Links
+        id: verify
+        run: |
+          node .github/scripts/verify_links.js > output.txt
+          cat output.txt
+          # Read output.txt to env vars for next steps or use script output
+          # The script already writes to GITHUB_OUTPUT, so we can use steps.verify.outputs
+        continue-on-error: true
+
+      - name: Update PR Title
+        if: steps.verify.outputs.title
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "${{ steps.verify.outputs.title }}";
+            github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              title: title
+            })
+
+      - name: Label Link Status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = [];
+            const iconStatus = "${{ steps.verify.outputs.icon_status }}";
+            const linkStatus = "${{ steps.verify.outputs.link_status }}";
+            
+            if (iconStatus === 'ok') labels.push('头像可达');
+            else labels.push('头像不可达');
+            
+            if (linkStatus === 'ok') labels.push('网站可达');
+            else labels.push('网站不可达');
+            
+            if (iconStatus === 'ok' && linkStatus === 'ok') labels.push('URL全部可达');
+            
+            // Add labels
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: labels
+              });
+            }
+
+      - name: Request Ownership Verification
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = "请在您的网站根目录放置一个名为 `qingyun-verify.txt` 的文件以验证所有权（内容不限）。\n完成后请在此评论回复“准备完毕”以触发验证。";
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+            
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['所有权验证进行中']
+            });
+
+  verify-ownership:
+    if: github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '准备完毕')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get PR Branch
+        uses: actions/github-script@v7
+        id: get-pr
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return pr.data.head.sha;
+          result-encoding: string
+
+      - name: Checkout PR Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.get-pr.outputs.result }}
+
+      - name: Verify Ownership File
+        id: verify
+        run: node .github/scripts/verify_links.js
+
+      - name: Handle Verification Result
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const verifyStatus = "${{ steps.verify.outputs.verify_status }}";
+            if (verifyStatus === 'ok') {
+              // Merge PR
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                merge_method: 'squash'
+              });
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: "验证通过，已自动合并。"
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: "验证失败，未检测到 `qingyun-verify.txt` 文件，请检查后再次回复“准备完毕”。"
+              });
+            }
