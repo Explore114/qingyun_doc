@@ -135,7 +135,9 @@ qingyun_doc/
 
 ## 📈 Star 趋势
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Explore114/qingyun_doc&type=Date)](https://star-history.com/#Explore114/qingyun_doc&Date)
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Explore114/qingyun_doc&type=date&legend=top-left)](https://www.star-history.com/#Explore114/qingyun_doc&type=date&legend=top-left)
 
 ## 🤝 贡献指南
 
