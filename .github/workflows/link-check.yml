@@ -23,14 +23,34 @@ jobs:
         with:
           ref: ${{ github.base_ref }}
           path: base_code
+          fetch-depth: 0
 
       - name: Checkout PR Code (Unsafe Data)
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           path: pr_code
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          path: pr_code
           
+      - name: Check if only data.ts is changed
+        id: check_files
+        run: |
+          echo "Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
+          if [ "${{ steps.changed-files.outputs.all_changed_files }}" == ".vitepress/theme/untils/data.ts" ]; then
+            echo "valid=true" >> $GITHUB_OUTPUT
+          else
+            echo "valid=false" >> $GITHUB_OUTPUT
+            echo "Skipping workflow because other files are changed or data.ts is not the only change."
+          fi
+
       - name: Add Friend Link Label
+        if: steps.check_files.outputs.valid == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -42,6 +62,7 @@ jobs:
             })
 
       - name: Verify Links
+        if: steps.check_files.outputs.valid == 'true'
         id: verify
         run: |
           # Use the script from base_code to check diff between base and pr
@@ -50,7 +71,7 @@ jobs:
         continue-on-error: true
 
       - name: Update PR Title
-        if: steps.verify.outputs.title
+        if: steps.
         uses: actions/github-script@v7
         with:
           script: |
@@ -66,6 +87,7 @@ jobs:
             }
 
       - name: Label Link Status
+        if: steps.check_files.outputs.valid == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -91,6 +113,7 @@ jobs:
               });
             }
 
+        if: steps.check_files.outputs.valid == 'true'
       - name: Request Ownership Verification
         uses: actions/github-script@v7
         with:
