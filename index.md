@@ -58,7 +58,7 @@ const members = [
   },
   {
     avatar: 'https://q1.qlogo.cn/g?b=qq&nk=2418587005&s=640',
-    name: 'alpt 刘小圳',
+    name: '刘小圳',
     title: '项目开发',
     links: [
       { icon: 'qq', link: 'http://2418587005.qzone.qq.com' },
