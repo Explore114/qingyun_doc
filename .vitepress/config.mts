@@ -21,6 +21,20 @@ export default defineConfig({
           ]
         }
       ],
+      '/docs/announcement': [
+        {
+          text: '公告',
+          items: [
+            { text: '友链添加指南', link: '/docs/announcement/notice/友链指南.md' }
+          ]
+        },
+        {
+          text: '活动',
+          items: [
+
+          ]
+        }
+      ],
     },
 
     socialLinks: [
