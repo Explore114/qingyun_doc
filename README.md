@@ -145,4 +145,4 @@ qingyun_doc/
 
 ## 📄 开源协议
 
-本项目遵循 [MIT License](LICENSE) 开源协议。
+本项目遵循 MIT 开源协议。
