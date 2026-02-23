@@ -20,14 +20,14 @@ export const NAV_DATA: NavData[] = [
     title: '友情链接',
     items: [
       {
-        icon: 'https://baidu.com/',
-        title: 'J的个人博客',
+        icon: '',
+        title: 'Duococo文档',
         badge: {
-          text: '博客',
+          text: '友链',
           type: 'tip',
         },
-        desc: '我的个人博客，分享经验',
-        link: 'https://blog.jsoftstudio.top/'
+        desc: '一个文档（）',
+        link: 'https://duoco.hinincs.top/'
       },
       {
         icon: '',
